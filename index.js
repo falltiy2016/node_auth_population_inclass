@@ -36,7 +36,6 @@ passport.use(new FacebookStrategy({
   },
   function(accessToken, refreshToken, profile, done) {
 
-
   	Person.findOrCreate({facebookID:profile.id}, function(err, user) {
       if (err) { return done(err); }
 
@@ -82,13 +81,11 @@ passport.deserializeUser(function(id, done) {
 });
 
 
-
-
-app.get('/stories',isAuthenticated,(req, res) => {
+app.get('/stories',(req, res) => {
 
 	let find = Story
 	.find()
-	.populate('_creator')
+	.populate('_creator comments')
 	.exec((err, story) => {
 	  if (err) return res.send(err);
 	  res.json(story);
@@ -114,8 +111,32 @@ app.post('/story',isAuthenticated,(req, res) => {
 })
 
 
+app.post('/comment',(req, res) => {
+	
+	let comment = new Comment({
+		author:'58331d104f5a51362eda0684',
+		content:"TESTING",
+		_story: '5833156b2459e43377b190ea' 
+	});
+	  
+	comment.save((err) => {
+		if (err) {
+			res.send({error:err});
+			return;
+		} ;
+
+		Story.findById('5833156b2459e43377b190ea',function(err,story){
+			story.comments.push(comment);
+			story.save(function(err,response){
+				res.send({success:err})
+			});
+		})
+	});
+})
+
+
 function isAuthenticated(req, res, next) {
-    if (req.user.admin)
+    if (req.user)
         return next();
     res.redirect('/login');
 }
